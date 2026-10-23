@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typhoon Champi Quiz / 薔琵颱風知識測驗</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a1128;
+            --card-bg: #1c2541;
+            --accent-blue: #48cae4;
+            --accent-gold: #ffb703;
+            --success-green: #38b000;
+            --danger-red: #ff4d6d;
+            --text-light: #f8f9fa;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header { text-align: center; margin-bottom: 20px; max-width: 700px; width: 100%; }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .school-badge {
+            background: rgba(72, 202, 228, 0.15);
+            color: var(--accent-blue);
+            border: 1px solid var(--accent-blue);
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .lang-btn {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            border: none;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        h1 { font-size: 1.8rem; color: var(--accent-blue); margin-bottom: 8px; }
+
+        .quiz-container {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .question-title { font-size: 1.15rem; line-height: 1.5; color: var(--text-light); }
+
+        .audio-btn {
+            background: rgba(72, 202, 228, 0.2);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: bold;
+        }
+
+        .options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-light);
+            padding: 14px 18px;
+            border-radius: 10px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not(:disabled) { background: rgba(72, 202, 228, 0.2); border-color: var(--accent-blue); }
+        .option-btn.correct { background: rgba(56, 176, 0, 0.3); border-color: var(--success-green); color: #d8f3dc; font-weight: bold; }
+        .option-btn.incorrect { background: rgba(255, 77, 109, 0.3); border-color: var(--danger-red); color: #ffccd5; }
+
+        .feedback-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid var(--accent-blue);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            display: none;
+        }
+        .feedback-box.active { display: block; }
+
+        .next-btn {
+            background: var(--accent-blue);
+            color: var(--bg-dark);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            display: none;
+        }
+
+        .result-screen { text-align: center; display: none; }
+        .result-screen.active { display: block; }
+        .score-display { font-size: 2.5rem; color: var(--accent-gold); margin: 15px 0; font-weight: bold; }
+        
+        .restart-btn {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-row">
+            <span class="school-badge" id="schoolBadge">🏫 金門縣古城國民小學</span>
+            <button class="lang-btn" onclick="toggleLanguage()">🌐 English / 中文</button>
+        </div>
+        <h1 id="quizTitle">🌀 薔琵颱風即時知識測驗</h1>
+    </header>
+
+    <main class="quiz-container">
+        <div id="questionScreen">
+            <div class="progress-bar">
+                <span id="questionCount">Question 1 / 5</span>
+                <span id="scoreTracker">Score: 0</span>
+            </div>
+            
+            <div class="question-header">
+                <div class="question-title" id="questionTitle">Loading...</div>
+                <button class="audio-btn" onclick="readQuestion()">🔊 Listen</button>
+            </div>
+
+            <div class="options-list" id="optionsList"></div>
+            <div class="feedback-box" id="feedbackBox"></div>
+            <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next ➔</button>
+        </div>
+
+        <div class="result-screen" id="resultScreen">
+            <h2 id="resultTitle">🎉 Completed!</h2>
+            <div class="score-display" id="finalScore">0 / 100</div>
+            <p id="resultComment" style="margin-bottom: 20px; line-height: 1.5;"></p>
+            <button class="restart-btn" onclick="restartQuiz()" id="restartBtn">Try Again 🔄</button>
+        </div>
+    </main>
+
+    <script>
+        let currentLang = 'zh';
+
+        const quizData = [
+            {
+                zh: {
+                    q: "請問「薔琵」（Champi）颱風名稱是由哪個國家所提供的？",
+                    opts: ["日本", "寮國 (Lao PDR)", "菲律賓", "越南"],
+                    exp: "根據 WMO 官方表單，「薔琵」（Champi）是由寮國提供的名稱，意指一種芳香的花卉。"
+                },
+                en: {
+                    q: "Which country contributed the name 'Champi' for the typhoon?",
+                    opts: ["Japan", "Laos (Lao PDR)", "Philippines", "Vietnam"],
+                    exp: "According to the official WMO list, 'Champi' was named by Laos, representing a fragrant flower."
+                },
+                answer: 1
+            },
+            {
+                zh: {
+                    q: "在 115年 10 月 23 日的氣象警報中，下列關於全台停班課狀況何者正確？",
+                    opts: ["全台皆正常上班課", "僅金門縣停班課", "台東縣宣布停班課，全台僅金門縣正常上班課", "全台同步停班課"],
+                    exp: "10/23 薔琵逼近，台東宣布停班課，全台僅金門縣正常上班上課！"
+                },
+                en: {
+                    q: "Regarding school/work announcements on Oct 23, which is correct?",
+                    opts: ["All Taiwan open", "Only Kinmen closed", "Taitung closed, while only Kinmen remains OPEN", "All Taiwan closed"],
+                    exp: "On Oct 23, Taitung announced closures while Kinmen was the only county OPEN for school and work!"
+                },
+                answer: 2
+            },
+            {
+                zh: {
+                    q: "隨著薔琵颱風接近，氣象署已將其強度調整為哪一個等級？",
+                    opts: ["輕度颱風", "中度颱風", "強烈颱風", "熱帶低壓"],
+                    exp: "薔琵颱風強度已調整減弱為「中度颱風」，但暴風圈仍廣，需注意防颱。"
+                },
+                en: {
+                    q: "What is the current typhoon strength category for Typhoon Champi?",
+                    opts: ["Mild Typhoon", "Moderate Typhoon", "Severe Typhoon", "Tropical Depression"],
+                    exp: "Typhoon Champi is currently categorized as a 'Moderate Typhoon'."
+                },
+                answer: 1
+            },
+            {
+                zh: {
+                    q: "觀測「雷達回波圖」時，最強烈的眼牆雨區通常呈現什麼顏色？",
+                    opts: ["藍色與綠色", "淡黃色", "紅色與深紅色", "純白色"],
+                    exp: "雷達圖中，紅色與深紅色代表 dBZ 值極高的強降雨對流區。"
+                },
+                en: {
+                    q: "In a radar reflectivity map, which color represents the heaviest rain eye-wall area?",
+                    opts: ["Blue & Green", "Yellow", "Red & Dark Red", "White"],
+                    exp: "Red and dark red areas indicate high dBZ values with torrential rainfall."
+                },
+                answer: 2
+            },
+            {
+                zh: {
+                    q: "古城國小的小朋友在 10/23 正常上班課期間，上下學最注意什麼？",
+                    opts: ["不用雨具直接跑回家", "注意強陣風與交通安全", "到海邊看巨浪", "放風箏"],
+                    exp: "颱風外圍環流有強陣風，上下學務必注意安全。"
+                },
+                en: {
+                    q: "What is the most important safety rule for Gucheng students on Oct 23?",
+                    opts: ["Run home without rain gear", "Watch out for strong wind gusts and traffic safety", "Go watch sea waves", "Fly a kite"],
+                    exp: "Be extra cautious with strong wind gusts during your commute."
+                },
+                answer: 1
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isAnswered = false;
+
+        function toggleLanguage() {
+            currentLang = (currentLang === 'zh') ? 'en' : 'zh';
+            document.getElementById('schoolBadge').innerText = currentLang === 'zh' ? "🏫 金門縣古城國民小學" : "🏫 Kinmen Gucheng Elementary School";
+            document.getElementById('quizTitle').innerText = currentLang === 'zh' ? "🌀 薔琵颱風即時知識測驗" : "🌀 Typhoon Champi Knowledge Quiz";
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            document.getElementById('feedbackBox').classList.remove('active');
+            document.getElementById('nextBtn').style.display = 'none';
+
+            const currentQ = quizData[currentQuestionIndex];
+            const qData = currentQ[currentLang];
+
+            document.getElementById('questionCount').innerText = `${currentLang === 'zh' ? '問題' : 'Question'} ${currentQuestionIndex + 1} / ${quizData.length}`;
+            document.getElementById('scoreTracker').innerText = `${currentLang === 'zh' ? '得分' : 'Score'}: ${score}`;
+            document.getElementById('questionTitle').innerText = qData.q;
+
+            const optsList = document.getElementById('optionsList');
+            optsList.innerHTML = '';
+            qData.opts.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = option;
+                btn.onclick = () => selectOption(index, btn);
+                optsList.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, selectedBtn) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            const currentQ = quizData[currentQuestionIndex];
+            const qData = currentQ[currentLang];
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(btn => btn.disabled = true);
+
+            const feedbackEl = document.getElementById('feedbackBox');
+            if (selectedIndex === currentQ.answer) {
+                selectedBtn.classList.add('correct');
+                score += 20;
+                document.getElementById('scoreTracker').innerText = `${currentLang === 'zh' ? '得分' : 'Score'}: ${score}`;
+                feedbackEl.innerHTML = `<b>🎉 ${currentLang === 'zh' ? '答對了！' : 'Correct!'}</b><br>${qData.exp}`;
+            } else {
+                selectedBtn.classList.add('incorrect');
+                allBtns[currentQ.answer].classList.add('correct');
+                feedbackEl.innerHTML = `<b>💡 ${currentLang === 'zh' ? '答錯囉！正確答案是：' : 'Incorrect! Correct answer:'} ${qData.opts[currentQ.answer]}</b><br>${qData.exp}`;
+            }
+
+            feedbackEl.classList.add('active');
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.innerText = currentQuestionIndex < quizData.length - 1 ? (currentLang === 'zh' ? '下一題 ➔' : 'Next ➔') : (currentLang === 'zh' ? '查看結果 🏆' : 'See Results 🏆');
+            nextBtn.style.display = 'block';
+        }
+
+        function readQuestion() {
+            window.speechSynthesis.cancel();
+            const currentQ = quizData[currentQuestionIndex][currentLang];
+            const utterance = new SpeechSynthesisUtterance(currentQ.q);
+            utterance.lang = currentLang === 'zh' ? 'zh-TW' : 'en-US';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('questionScreen').style.display = 'none';
+            const resultScreen = document.getElementById('resultScreen');
+            resultScreen.classList.add('active');
+            document.getElementById('finalScore').innerText = `${score} / 100`;
+
+            const comment = document.getElementById('resultComment');
+            if (score === 100) comment.innerText = currentLang === 'zh' ? "太神啦！你對薔琵颱風與防颱知識完全精通！" : "Awesome! You are a Typhoon Master!";
+            else comment.innerText = currentLang === 'zh' ? "表現很棒！繼續保持對氣象的好奇心喔！" : "Great job! Keep exploring weather science!";
+
+            if (typeof confetti === 'function' && score >= 60) confetti({ particleCount: 150, spread: 80 });
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('questionScreen').style.display = 'block';
+            loadQuestion();
+        }
+
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
